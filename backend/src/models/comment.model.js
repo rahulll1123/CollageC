@@ -10,9 +10,27 @@ const commentSchema = new mongoos.Schema(
 			ref: "User",
 			required: true,
 		},
-		comments: [{ type: mongoos.Schema.Types.ObjectId, ref: "Comment" }],
+		post: {
+			type: mongoos.Schema.Types.ObjectId,
+			ref: "Post",
+			required: true,
+		},
+		parentComment: {
+			type: mongoos.Schema.Types.ObjectId,
+			ref: "Comment",
+			default: null,
+		},
+		likes: [{ type: mongoos.Schema.Types.ObjectId, ref: "User" }],
+		isDeleted: { type: Boolean, default: false },
 	},
 	{ timestamps: true },
 );
+
+commentSchema.virtual("likeCount").get(function () {
+	return this.likes.length;
+});
+
+commentSchema.set("toObject", { virtuals: true });
+commentSchema.set("toJSON", { virtuals: true });
 
 export default mongoos.model("Comment", commentSchema);

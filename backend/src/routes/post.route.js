@@ -1,18 +1,47 @@
 /** @format */
 
-import { Router } from "express";
+import express from "express";
+const router = express.Router();
 
-const router = Router();
+// Import your controllers
+import {
+	createPost,
+	getPost,
+	getAllPosts,
+	getUserPosts,
+	updatePost,
+	deletePost,
+	createComment,
+	getPostComments, // The new chunked route
+	updateComment,
+	deleteComment,
+	addLike,
+	removeLike,
+} from "../controllers/post.controller.js";
 
-router.post("/create/:Id", createPost);
-router.get("/get/:Id", getPost);
-router.get("/getAll/:page", getAllPosts);
-router.delete("/delete/:Id", deletePost);
-router.put("/update/:Id", updatePost);
+import { protect } from "../middlewares/auth.middleware.js";
 
-router.post("/comment/create/:Id", createComment);
-router.get("/comment/get/:Id", getComment);
-router.delete("/comment/delete/:Id", deleteComment);
-router.put("/comment/update/:Id", updateComment);
+// Post Routes
+router.route("/").get(getAllPosts).post(protect, createPost);
+
+router.route("/user/:Id").get(getUserPosts);
+router
+	.route("/comments/:Id")
+	.put(protect, updateComment)
+	.delete(protect, deleteComment);
+
+router
+	.route("/:Id")
+	.get(getPost)
+	.put(protect, updatePost)
+	.delete(protect, deletePost);
+
+router
+	.route("/:Id/comments")
+	.get(getPostComments) // Use this for lazy loading/scrolling
+	.post(protect, createComment);
+
+router.route("/like/:id").post(protect, addLike);
+router.route("/unlike/:id").post(protect, removeLike);
 
 export default router;

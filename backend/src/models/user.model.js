@@ -7,7 +7,13 @@ const userSchema = new mongoose.Schema(
 		name: { type: String, required: true },
 		email: { type: String, required: true, unique: true },
 		password: { type: String, required: true },
-		profile: { type: Schema.Types.ObjectId, ref: "Profile", default: null },
+		profile: {
+			bio: { type: String, default: "" },
+			college: { type: String, default: "" },
+			avatar: { type: String, default: "" },
+			topics: [{ type: String }],
+			topPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
+		},
 		status: {
 			type: String,
 			enum: ["online", "offline", "do_not_disturb"],
