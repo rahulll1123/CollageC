@@ -1,0 +1,16 @@
+/** @format */
+
+import { useAuth } from "@/context/AuthContext";
+import { Navigate } from "react-router-dom";
+import { Outlet } from "react-router-dom";
+export const ProtectedRoute = () => {
+	const auth = useAuth();
+	// console.log(test);
+	if (auth.loading) {
+		return <h1>Waiting...</h1>;
+	}
+	if (!auth.user) {
+		return <Navigate to="/Login" replace />;
+	}
+	return <Outlet />;
+};
