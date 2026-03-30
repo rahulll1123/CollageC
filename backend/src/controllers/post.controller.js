@@ -6,7 +6,6 @@ import user from "../models/user.model.js";
 export async function createPost(req, res) {
 	try {
 		const { title, description, images } = req.body;
-		console.log(images);
 		if (!title || !description) {
 			return res
 				.status(400)

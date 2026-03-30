@@ -34,8 +34,6 @@ async function getChats(req, res) {
 async function startChat(req, res) {
 	try {
 		const userId = req.params.userId;
-		console.log(userId);
-		console.log(req.user.id);
 		const user = await User.findById(userId).select("name email");
 		const selfUser = await User.findById(req.user.id).select("name email");
 
@@ -45,24 +43,15 @@ async function startChat(req, res) {
 		if (!selfUser) {
 			return res.status(404).json({ message: "Self user not found" });
 		}
-		// console.log("User found:", user);
-		// console.log("Self user found:", selfUser);
 		let existingChat = await Chat.findOne({
 			participants: { $all: [user._id, selfUser._id] },
 		})
 			.and({ type: "private" })
 			.select("_id participants lastMessages")
 			.lean();
-		console.log("Existing chat found:", existingChat);
 		if (existingChat) {
 			return res.status(200).json(existingChat);
 		}
-		console.log(
-			"Starting new chat between:",
-			user._id,
-			"and",
-			selfUser._id,
-		);
 		const chat = new Chat({
 			participants: [user._id, selfUser._id],
 		});
@@ -92,14 +81,12 @@ async function createGroupChat(req, res) {
 					.json({ message: `User with ID ${id} not found` });
 			}
 		}
-		console.log(participantIds);
 
 		const chat = new Chat({
 			type: "group",
 			chatName,
 			participants: participantIds,
 		});
-		console.log(chat);
 
 		await chat.save();
 		res.status(201).json(chat);

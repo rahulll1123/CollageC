@@ -30,18 +30,6 @@ async function authRegister(req, res) {
 		});
 		await user.save();
 
-		// const authuser = { id: user._id, email: user.email };
-		// const token = jwt.sign(authuser, process.env.JWT_SECRET, {
-		// 	expiresIn: "7d",
-		// });
-
-		// res.cookie("token", token, {
-		// 	httpOnly: true,
-		// 	secure: process.env.NODE_ENV === "production",
-		// 	sameSite: "strict",
-		// 	maxAge: 7 * 24 * 60 * 60 * 1000,
-		// });
-
 		return res.status(201).json({
 			message: "User created successfully",
 			user: { name: user.name, email: user.email },
@@ -58,17 +46,14 @@ async function authLogin(req, res) {
 		if (!user) {
 			return res.status(400).json({ message: "Invalid credentials" });
 		}
-
-		if (!password) {
-			return res.status(400).json({ message: "Password is required" });
-		}
 		if (!password || typeof password !== "string") {
 			return res
 				.status(400)
 				.json({ message: "Invalid password provided" });
 		}
 
-		if (!bcrypt.compare(password, user.password)) {
+		const isMatch = await bcrypt.compare(password, user.password);
+		if (!isMatch) {
 			return res.status(400).json({ message: "Invalid credentials" });
 		}
 
@@ -80,13 +65,23 @@ async function authLogin(req, res) {
 		res.cookie("token", token, {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === "production",
-			sameSite: "strict",
+			sameSite: "Lax",
 			maxAge: 7 * 24 * 60 * 60 * 1000,
 		});
 
+		const resuser = {
+			_id: user._id,
+			name: user.name,
+			email: user.email,
+			status: user.status,
+			profile: {
+				avatar: user.profile.avatar,
+			},
+		};
+
 		return res.status(201).json({
 			message: "User Login successfully",
-			user: { name: user.name, email: user.email },
+			user: resuser,
 		});
 	} catch (error) {
 		console.error("Login Error:", error);
@@ -98,10 +93,23 @@ async function authLogout(req, res) {
 	res.clearCookie("token", {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === "production",
-		sameSite: "strict",
+		sameSite: "Lax",
 	});
 
 	return res.status(200).json({ message: "User logged out successfully" });
 }
 
-export { authRegister, authLogin, authLogout };
+async function verifyMe(req, res) {
+	try {
+		const user = await User.findById(req.user.id).select(
+			"profile.avatar _id name email status",
+		);
+		console.log(user);
+
+		res.status(200).json(user);
+	} catch (error) {
+		res.status(500).json({ message: "Server Error" });
+	}
+}
+
+export { authRegister, authLogin, authLogout, verifyMe };
