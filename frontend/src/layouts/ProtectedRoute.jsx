@@ -1,10 +1,10 @@
 /** @format */
-
-import { useAuth } from "@/context/AuthContext";
+import { useContext } from "react";
+import { AuthContext } from "@/context/AuthContext";
 import { Navigate } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 export const ProtectedRoute = () => {
-	const auth = useAuth();
+	const auth = useContext(AuthContext);
 	// console.log(test);
 	if (auth.loading) {
 		return <h1>Waiting...</h1>;

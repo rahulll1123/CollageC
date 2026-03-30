@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-import { AuthContext, useAuth } from "@/context/AuthContext";
+import { AuthContext } from "@/context/AuthContext";
 import { useContext } from "react";
 
 const loginSchema = z.object({
@@ -33,7 +33,7 @@ const loginSchema = z.object({
 
 export default function Login() {
 	const navigate = useNavigate();
-	const { setUser } = useAuth();
+	const { setUser } = useContext(AuthContext);
 	const {
 		register,
 		handleSubmit,
