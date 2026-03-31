@@ -8,7 +8,7 @@ import { AuthContext } from "@/context/AuthContext";
 import axios from "axios";
 import { formatDistanceToNow } from "date-fns";
 
-export const PostCard = ({ post }) => {
+export const PostCard = ({ post, setCommentIdPost }) => {
 	const { user } = useContext(AuthContext);
 	const [isExpanded, setIsExpanded] = useState(false);
 	const [like, setLike] = useState(null);
@@ -54,7 +54,7 @@ export const PostCard = ({ post }) => {
 	};
 
 	return (
-		<div className="border border-border rounded-lg p-4 space-y-3">
+		<div className="border border-border rounded-lg p-4 space-y-3 bg-card">
 			{/* User Section */}
 			<div className="flex items-center gap-3 justify-between">
 				<div className="flex items-center gap-3">
@@ -112,7 +112,7 @@ export const PostCard = ({ post }) => {
 								<img
 									src={image || "./default-avatar.svg"}
 									alt={`Post ${index}`}
-									className="h-full w-full object-cover"
+									className="h-full w-full object-cover cursor-pointer"
 								/>
 							</div>
 						))}
@@ -122,7 +122,7 @@ export const PostCard = ({ post }) => {
 							<button
 								key={i}
 								onClick={() => scrollTo(i)}
-								className={`h-2 rounded-full transition-all duration-300 cursor-pointer ease-in-out ${activeIndexImage === i ? "w-8 bg-red-600 opacity-100" : "w-2 bg-gray-400 opacity-50 hover:opacity-100"}`}
+								className={`h-2 rounded-full transition-all duration-300 cursor-pointer ease-in-out ${activeIndexImage === i ? "w-8 bg-chart-1 opacity-100" : "w-2 bg-gray-400 opacity-50 hover:opacity-100"}`}
 								aria-label={`Go to slide ${i + 1}`}
 							/>
 						))}
@@ -156,11 +156,14 @@ export const PostCard = ({ post }) => {
 					<Heart className="w-4 h-4" fill={like ? "red" : null} />
 					{post.likes?.length || 0}
 				</button>
-				<button className="flex items-center gap-2 hover:text-foreground transition-colors">
+				<button
+					className="flex items-center gap-2 hover:text-foreground transition-colors cursor-pointer"
+					onClick={() => setCommentIdPost(post._id)}
+				>
 					<MessageCircle className="w-4 h-4" />
 					{post.comments?.length || 0}
 				</button>
-				<button className="flex items-center gap-2 hover:text-foreground transition-colors">
+				<button className="flex items-center gap-2 hover:text-foreground transition-colors cursor-pointer">
 					<Share2 className="w-4 h-4" />
 				</button>
 			</div>

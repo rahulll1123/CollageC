@@ -17,6 +17,8 @@ import {
 	deleteComment,
 	addLike,
 	removeLike,
+	likeComment,
+	unlikeComment,
 } from "../controllers/post.controller.js";
 
 import { protect } from "../middlewares/auth.middleware.js";
@@ -29,6 +31,9 @@ router
 	.route("/comments/:commentId")
 	.put(protect, updateComment)
 	.delete(protect, deleteComment);
+
+router.post("/comments/:commentId/like", protect, likeComment);
+router.post("/comments/:commentId/unlike", protect, unlikeComment);
 
 router
 	.route("/:postId")

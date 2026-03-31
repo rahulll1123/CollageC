@@ -67,7 +67,6 @@ export async function getPostComments(req, res) {
 
 		const comments = await Comment.find({
 			post: req.params.postId,
-			parentComment: null, // Fetch top-level comments first
 		})
 			.populate("user", "name profile.avatar")
 			.sort({ createdAt: -1 })
@@ -165,7 +164,9 @@ export async function createComment(req, res) {
 		if (!content) {
 			return res.status(400).json({ message: "Content is required" });
 		}
-		const post = await Post.findById(req.params.postId);
+		const postId = req.params.postId;
+		console.log(postId);
+		const post = await Post.findById(postId);
 		if (!post) {
 			return res.status(404).json({ message: "Post not found" });
 		}
@@ -173,7 +174,7 @@ export async function createComment(req, res) {
 		let duplicateComment = await Comment.findOne({
 			user: req.user.id,
 			content,
-			post: req.params.Id,
+			post: postId,
 			isDeleted: false,
 			parentComment: parentCommentId,
 		});
@@ -186,7 +187,7 @@ export async function createComment(req, res) {
 		const comment = new Comment({
 			content,
 			user: req.user.id,
-			post: req.params.Id,
+			post: postId,
 			parentComment: parentCommentId,
 		});
 		await comment.save();
@@ -262,6 +263,46 @@ export async function removeLike(req, res) {
 		post.likes = post.likes.filter((id) => id.toString() !== req.user.id);
 		await post.save();
 		res.status(200).json({ message: "Post unliked successfully" });
+	} catch (error) {
+		res.status(400).json({ message: error.message });
+	}
+}
+
+export async function likeComment(req, res) {
+	try {
+		const comment = await Comment.findById(req.params.commentId);
+		if (!comment) {
+			return res.status(404).json({ message: "Comment not found" });
+		}
+		if (comment.likes.includes(req.user.id)) {
+			return res
+				.status(400)
+				.json({ message: "You have already liked this comment" });
+		}
+		comment.likes.push(req.user.id);
+		await comment.save();
+		res.status(200).json({ message: "Comment liked successfully" });
+	} catch (error) {
+		res.status(400).json({ message: error.message });
+	}
+}
+
+export async function unlikeComment(req, res) {
+	try {
+		const comment = await Comment.findById(req.params.commentId);
+		if (!comment) {
+			return res.status(404).json({ message: "Comment not found" });
+		}
+		if (!comment.likes.includes(req.user.id)) {
+			return res
+				.status(400)
+				.json({ message: "You have not liked this comment" });
+		}
+		comment.likes = comment.likes.filter(
+			(id) => id.toString() !== req.user.id,
+		);
+		await comment.save();
+		res.status(200).json({ message: "Comment unliked successfully" });
 	} catch (error) {
 		res.status(400).json({ message: error.message });
 	}
