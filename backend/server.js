@@ -12,7 +12,11 @@ import postRoutes from "./src/routes/post.route.js";
 import LogRequest from "./src/middlewares/logs.middleware.js";
 import cors from "cors";
 
-const allowedOrigins = ["http://localhost:5173", "http://localhost:3000"];
+const allowedOrigins = [
+	"http://localhost:5173",
+	"http://localhost:3000",
+	"http://localhost:4173",
+];
 
 // configuration
 dotenv.config();
