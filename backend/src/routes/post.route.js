@@ -24,24 +24,24 @@ import { protect } from "../middlewares/auth.middleware.js";
 // Post Routes
 router.route("/").get(getAllPosts).post(protect, createPost);
 
-router.route("/user/:Id").get(getUserPosts);
+router.route("/user/:userId").get(getUserPosts);
 router
-	.route("/comments/:Id")
+	.route("/comments/:commentId")
 	.put(protect, updateComment)
 	.delete(protect, deleteComment);
 
 router
-	.route("/:Id")
+	.route("/:postId")
 	.get(getPost)
 	.put(protect, updatePost)
 	.delete(protect, deletePost);
 
 router
-	.route("/:Id/comments")
+	.route("/:postId/comments")
 	.get(getPostComments) // Use this for lazy loading/scrolling
 	.post(protect, createComment);
 
-router.route("/like/:id").post(protect, addLike);
-router.route("/unlike/:id").post(protect, removeLike);
+router.route("/:postId/like").post(protect, addLike);
+router.route("/:postId/unlike").post(protect, removeLike);
 
 export default router;

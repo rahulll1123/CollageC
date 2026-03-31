@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "./layouts/ProtectedRoute";
+import Navbar from "./components/Navbar";
 
 axios.defaults.baseURL = "http://localhost:5500";
 axios.defaults.withCredentials = true;
@@ -17,17 +18,18 @@ axios.defaults.headers.common["Content-Type"] = "application/json";
 function App() {
 	return (
 		<AuthProvider>
-			{/* <NavFoot /> */}
 			<Router>
+				<Navbar />
 				<div className="App">
 					<Routes>
-						<Route element={<NavFoot />}>
-							<Route path="/Login" element={<Login />} />
-							<Route path="/Signup" element={<Signup />} />
-							<Route element={<ProtectedRoute />}>
-								<Route path="/" element={<AllPosts />} />
-							</Route>
+						{/* <Route element={<NavFoot />}> */}
+						<Route path="/Login" element={<Login />} />
+						<Route path="/Signup" element={<Signup />} />
+						<Route element={<ProtectedRoute />}>
+							<Route path="/" element={<AllPosts />} />
 						</Route>
+						{/* </Route> */}
+						<Route path="/*" element={<AllPosts />} />
 					</Routes>
 				</div>
 			</Router>

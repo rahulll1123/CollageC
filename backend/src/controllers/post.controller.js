@@ -47,7 +47,7 @@ export async function createPost(req, res) {
 
 export async function getPost(req, res) {
 	try {
-		const post = await Post.findById(req.params.Id).populate(
+		const post = await Post.findById(req.params.postId).populate(
 			"user",
 			"name profile.avatar",
 		);
@@ -66,7 +66,7 @@ export async function getPostComments(req, res) {
 		const skip = (page - 1) * limit;
 
 		const comments = await Comment.find({
-			post: req.params.Id,
+			post: req.params.postId,
 			parentComment: null, // Fetch top-level comments first
 		})
 			.populate("user", "name profile.avatar")
@@ -91,7 +91,7 @@ export async function getPostComments(req, res) {
 
 export async function getUserPosts(req, res) {
 	try {
-		const posts = await Post.find({ user: req.params.Id }).populate(
+		const posts = await Post.find({ user: req.params.userId }).populate(
 			"user",
 			"name profile.avatar",
 		);
@@ -117,7 +117,7 @@ export async function getAllPosts(req, res) {
 }
 export async function updatePost(req, res) {
 	try {
-		const post = await Post.findById(req.params.Id);
+		const post = await Post.findById(req.params.postId);
 		if (!post) {
 			return res.status(404).json({ message: "Post not found" });
 		}
@@ -136,7 +136,7 @@ export async function updatePost(req, res) {
 }
 export async function deletePost(req, res) {
 	try {
-		const post = await Post.findById(req.params.Id);
+		const post = await Post.findById(req.params.postId);
 		if (!post) {
 			return res.status(404).json({ message: "Post not found" });
 		}
@@ -165,7 +165,7 @@ export async function createComment(req, res) {
 		if (!content) {
 			return res.status(400).json({ message: "Content is required" });
 		}
-		const post = await Post.findById(req.params.Id);
+		const post = await Post.findById(req.params.postId);
 		if (!post) {
 			return res.status(404).json({ message: "Post not found" });
 		}
@@ -199,7 +199,7 @@ export async function createComment(req, res) {
 export async function updateComment(req, res) {
 	try {
 		const { content } = req.body;
-		const comment = await Comment.findById(req.params.Id);
+		const comment = await Comment.findById(req.params.commentId);
 		if (!comment) {
 			return res.status(404).json({ message: "Comment not found" });
 		}
@@ -215,7 +215,7 @@ export async function updateComment(req, res) {
 }
 export async function deleteComment(req, res) {
 	try {
-		const comment = await Comment.findById(req.params.Id);
+		const comment = await Comment.findById(req.params.commentId);
 		if (!comment) {
 			return res.status(404).json({ message: "Comment not found" });
 		}
@@ -231,7 +231,7 @@ export async function deleteComment(req, res) {
 
 export async function addLike(req, res) {
 	try {
-		const post = await Post.findById(req.params.id);
+		const post = await Post.findById(req.params.postId);
 		if (!post) {
 			return res.status(404).json({ message: "Post not found" });
 		}
@@ -250,7 +250,7 @@ export async function addLike(req, res) {
 
 export async function removeLike(req, res) {
 	try {
-		const post = await Post.findById(req.params.id);
+		const post = await Post.findById(req.params.postId);
 		if (!post) {
 			return res.status(404).json({ message: "Post not found" });
 		}
