@@ -236,7 +236,7 @@ const CommentItem = ({ comment, setReplyTo }) => {
 			<div className="flex flex-col">
 				<div className="flex items-center gap-2">
 					<Avatar className="h-8 w-8">
-						<AvatarImage src={comment.user.profile.avatar} />
+						<AvatarImage src={comment.user.avatar} />
 						<AvatarFallback>
 							{comment.user.name?.charAt(0)}
 						</AvatarFallback>

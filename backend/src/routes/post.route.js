@@ -11,42 +11,32 @@ import {
 	getUserPosts,
 	updatePost,
 	deletePost,
-	createComment,
-	getPostComments, // The new chunked route
-	updateComment,
-	deleteComment,
 	addLike,
 	removeLike,
-	likeComment,
-	unlikeComment,
 } from "../controllers/post.controller.js";
 
-import { protect } from "../middlewares/auth.middleware.js";
+import {
+	createComment,
+	getPostComments,
+} from "../controllers/comment.controller.js";
+
+// import { protect } from "../middlewares/auth.middleware.js";
 
 // Post Routes
-router.route("/").get(getAllPosts).post(protect, createPost);
-
-router.route("/user/:userId").get(getUserPosts);
 router
-	.route("/comments/:commentId")
-	.put(protect, updateComment)
-	.delete(protect, deleteComment);
+	.route("/")
+	.get(getAllPosts) // feed all post (wip to add quer for personalized feed)
+	.post(createPost); // create Post (wip add reference to Project)
 
-router.post("/comments/:commentId/like", protect, likeComment);
-router.post("/comments/:commentId/unlike", protect, unlikeComment);
+router.route("/user/:userId").get(getUserPosts); // all post of a user (profile)
 
-router
-	.route("/:postId")
-	.get(getPost)
-	.put(protect, updatePost)
-	.delete(protect, deletePost);
+router.route("/:postId").get(getPost).put(updatePost).delete(deletePost);
 
 router
 	.route("/:postId/comments")
-	.get(getPostComments) // Use this for lazy loading/scrolling
-	.post(protect, createComment);
+	.get(getPostComments) // only root comments on post with paging
+	.post(createComment); // create root comment / reply on comment
 
-router.route("/:postId/like").post(protect, addLike);
-router.route("/:postId/unlike").post(protect, removeLike);
+router.route("/:postId/like").post(addLike).delete(removeLike);
 
 export default router;

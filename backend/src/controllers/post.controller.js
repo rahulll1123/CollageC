@@ -1,43 +1,61 @@
 /** @format */
 import Post from "../models/post.model.js";
-import Comment from "../models/comment.model.js";
-import user from "../models/user.model.js";
+import User from "../models/user.model.js";
 
 export async function createPost(req, res) {
 	try {
-		const { title, description, images } = req.body;
+		const {
+			project = null,
+			title,
+			description,
+			images,
+			tags = [],
+		} = req.body;
 		if (!title || !description) {
 			return res
 				.status(400)
 				.json({ message: "Title and description are required" });
 		}
-		const userProfile = await user.findById(req.user.id).select("profile");
-		if (!userProfile) {
-			return res.status(404).json({ message: "User not found" });
-		}
 
-		const existingPost = await Post.findOne({ title, user: req.user.id });
+		const existingPost = await Post.findOne({
+			title,
+			user: req.user.id,
+		})
+			.select("_id")
+			.lean();
 		if (existingPost) {
 			return res.status(400).json({
 				message: "You have already created a post with this title",
 			});
 		}
 
+		const user = await User.findById(req.user.id).select("profile");
+		if (!user) {
+			return res.status(404).json({ message: "User not found" });
+		}
+
 		const post = new Post({
 			user: req.user.id,
+			project,
 			title,
 			description,
 			images,
+			tags,
 		});
 		await post.save();
 
-		if (userProfile.profile) {
-			let len = userProfile.profile.topPosts.length;
+		user.updateOne({
+			$push: { "profile.topPosts": post._id },
+			$slice: -10,
+		}).exec();
+
+		if (user.profile) {
+			let len = user.profile.topPosts.length;
 			if (len >= 10) {
-				userProfile.profile.topPosts.shift();
+				user.profile.topPosts.shift();
 			}
-			userProfile.profile.topPosts.push(post._id);
-			await userProfile.save();
+			user.profile.topPosts.push(post._id);
+			await user.save();
 		}
 		res.status(201).json(post);
 	} catch (error) {
@@ -47,10 +65,7 @@ export async function createPost(req, res) {
 
 export async function getPost(req, res) {
 	try {
-		const post = await Post.findById(req.params.postId).populate(
-			"user",
-			"name profile.avatar",
-		);
+		const post = await Post.getPost(req.params.postId, req.user?.id);
 
 		if (!post) return res.status(404).json({ message: "Post not found" });
 
@@ -60,60 +75,35 @@ export async function getPost(req, res) {
 	}
 }
 
-export async function getPostComments(req, res) {
-	try {
-		const { page = 1, limit = 10 } = req.query; // Get pagination from query params
-		const skip = (page - 1) * limit;
-
-		const comments = await Comment.find({
-			post: req.params.postId,
-		})
-			.populate("user", "name profile.avatar")
-			.sort({ createdAt: -1 })
-			.skip(skip)
-			.limit(parseInt(limit));
-
-		const totalComments = await Comment.countDocuments({
-			post: req.params.Id,
-		});
-
-		res.status(200).json({
-			comments,
-			currentPage: page,
-			totalPages: Math.ceil(totalComments / limit),
-			totalComments,
-		});
-	} catch (error) {
-		res.status(400).json({ message: error.message });
-	}
-}
-
 export async function getUserPosts(req, res) {
 	try {
-		const posts = await Post.find({ user: req.params.userId }).populate(
-			"user",
-			"name profile.avatar",
-		);
+		const posts = await Post.getUserPost(req.params.userId, req.user?.id);
+
+		if (!posts || posts.length === 0) {
+			return res
+				.status(404)
+				.json({ message: "No posts found for this user" });
+		}
+
 		res.status(200).json(posts);
 	} catch (error) {
 		res.status(400).json({ message: error.message });
 	}
 }
+
 export async function getAllPosts(req, res) {
 	try {
-		const page = parseInt(req.query.page) || 1;
-		const limit = 10;
+		const page = parseInt(req.query?.page) || 1;
+		const limit = parseInt(req.query?.limit) || 10;
 		const skip = (page - 1) * limit;
 		// update this method as it is very slow (later)
-		const posts = await Post.find()
-			.populate("user", "name profile.avatar")
-			.skip(skip)
-			.limit(limit);
+		const posts = await Post.getFeed(req.user.id, skip, limit);
 		res.status(200).json(posts);
 	} catch (error) {
 		res.status(400).json({ message: error.message });
 	}
 }
+
 export async function updatePost(req, res) {
 	try {
 		const post = await Post.findById(req.params.postId);
@@ -123,7 +113,7 @@ export async function updatePost(req, res) {
 		if (post.user.toString() !== req.user.id) {
 			return res.status(403).json({ message: "Unauthorized" });
 		}
-		const { title, description, images } = req.body;
+		const { title, description, images = [] } = req.body;
 		if (title) post.title = title;
 		if (description) post.description = description;
 		if (images && images.length > 0) post.images = images;
@@ -133,177 +123,58 @@ export async function updatePost(req, res) {
 		res.status(400).json({ message: error.message });
 	}
 }
+
 export async function deletePost(req, res) {
 	try {
-		const post = await Post.findById(req.params.postId);
-		if (!post) {
-			return res.status(404).json({ message: "Post not found" });
-		}
-		if (post.user.toString() !== req.user.id) {
-			return res.status(403).json({ message: "Unauthorized" });
-		}
-
-		await post.deleteOne();
-
-		await user.updateOne(
-			{ _id: req.user.id },
-			{ $pull: { "profile.topPosts": post._id } },
-		);
-
-		await Comment.deleteMany({ post: req.params.Id });
-
-		res.status(200).json({ message: "Post deleted successfully" });
-	} catch (error) {
-		res.status(400).json({ message: error.message });
-	}
-}
-
-export async function createComment(req, res) {
-	try {
-		const { content, parentCommentId = null } = req.body;
-		if (!content) {
-			return res.status(400).json({ message: "Content is required" });
-		}
-		const postId = req.params.postId;
-		console.log(postId);
+		const { postId } = req.params;
+		const userId = req.user.id;
 		const post = await Post.findById(postId);
 		if (!post) {
 			return res.status(404).json({ message: "Post not found" });
 		}
-
-		let duplicateComment = await Comment.findOne({
-			user: req.user.id,
-			content,
-			post: postId,
-			isDeleted: false,
-			parentComment: parentCommentId,
-		});
-		if (duplicateComment) {
-			return res
-				.status(400)
-				.json({ message: "You have already made this comment" });
+		if (post.user.toString() !== userId) {
+			return res.status(403).json({
+				message: "Unauthorized",
+			});
 		}
 
-		const comment = new Comment({
-			content,
-			user: req.user.id,
-			post: postId,
-			parentComment: parentCommentId,
-		});
-		await comment.save();
-		res.status(201).json(comment);
-	} catch (error) {
-		res.status(400).json({ message: error.message });
-	}
-}
+		await Promise.all([
+			post.deleteOne(),
+			User.updateOne(
+				{ _id: userId },
+				{ $pull: { "profile.topPosts": post._id } },
+			),
+			Comment.deleteMany({ post: postId }),
+		]);
 
-export async function updateComment(req, res) {
-	try {
-		const { content } = req.body;
-		const comment = await Comment.findById(req.params.commentId);
-		if (!comment) {
-			return res.status(404).json({ message: "Comment not found" });
-		}
-		if (comment.user.toString() !== req.user.id) {
-			return res.status(403).json({ message: "Unauthorized" });
-		}
-		if (content) comment.content = content;
-		await comment.save();
-		res.status(200).json(comment);
+		res.status(200).json({ message: "Post deleted successfully" });
 	} catch (error) {
-		res.status(400).json({ message: error.message });
-	}
-}
-export async function deleteComment(req, res) {
-	try {
-		const comment = await Comment.findById(req.params.commentId);
-		if (!comment) {
-			return res.status(404).json({ message: "Comment not found" });
-		}
-		if (comment.user.toString() !== req.user.id) {
-			return res.status(403).json({ message: "Unauthorized" });
-		}
-		await comment.updateOne({ content: "Deleted", isDeleted: true });
-		res.status(200).json({ message: "Comment deleted successfully" });
-	} catch (error) {
-		res.status(400).json({ message: error.message });
+		res.status(500).json({ message: error.message });
 	}
 }
 
 export async function addLike(req, res) {
 	try {
-		const post = await Post.findById(req.params.postId);
+		const post = await Post.addLike(req.params.postId, req.user.id);
 		if (!post) {
-			return res.status(404).json({ message: "Post not found" });
+			return res.status(404).json({ message: "Post Not Found" });
 		}
-		if (post.likes.includes(req.user.id)) {
-			return res
-				.status(400)
-				.json({ message: "You have already liked this post" });
-		}
-		post.likes.push(req.user.id);
-		await post.save();
-		res.status(200).json({ message: "Post liked successfully" });
+
+		return res.status(200).json({ message: "Post liked successfully" });
 	} catch (error) {
-		res.status(400).json({ message: error.message });
+		return res.status(400).json({ message: error.message });
 	}
 }
 
 export async function removeLike(req, res) {
 	try {
-		const post = await Post.findById(req.params.postId);
+		const post = await Post.removeLike(req.params.postId, req.user.id);
 		if (!post) {
-			return res.status(404).json({ message: "Post not found" });
+			return res.status(400).json({ message: "Post not found" });
 		}
-		if (!post.likes.includes(req.user.id)) {
-			return res
-				.status(400)
-				.json({ message: "You have not liked this post" });
-		}
-		post.likes = post.likes.filter((id) => id.toString() !== req.user.id);
-		await post.save();
-		res.status(200).json({ message: "Post unliked successfully" });
-	} catch (error) {
-		res.status(400).json({ message: error.message });
-	}
-}
 
-export async function likeComment(req, res) {
-	try {
-		const comment = await Comment.findById(req.params.commentId);
-		if (!comment) {
-			return res.status(404).json({ message: "Comment not found" });
-		}
-		if (comment.likes.includes(req.user.id)) {
-			return res
-				.status(400)
-				.json({ message: "You have already liked this comment" });
-		}
-		comment.likes.push(req.user.id);
-		await comment.save();
-		res.status(200).json({ message: "Comment liked successfully" });
+		return res.status(200).json({ message: "Post unliked successfully" });
 	} catch (error) {
-		res.status(400).json({ message: error.message });
-	}
-}
-
-export async function unlikeComment(req, res) {
-	try {
-		const comment = await Comment.findById(req.params.commentId);
-		if (!comment) {
-			return res.status(404).json({ message: "Comment not found" });
-		}
-		if (!comment.likes.includes(req.user.id)) {
-			return res
-				.status(400)
-				.json({ message: "You have not liked this comment" });
-		}
-		comment.likes = comment.likes.filter(
-			(id) => id.toString() !== req.user.id,
-		);
-		await comment.save();
-		res.status(200).json({ message: "Comment unliked successfully" });
-	} catch (error) {
-		res.status(400).json({ message: error.message });
+		return res.status(400).json({ message: error.message });
 	}
 }

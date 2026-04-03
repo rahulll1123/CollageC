@@ -75,7 +75,7 @@ async function authLogin(req, res) {
 			email: user.email,
 			status: user.status,
 			profile: {
-				avatar: user.profile.avatar,
+				avatar: user.avatar,
 			},
 		};
 
@@ -102,7 +102,7 @@ async function authLogout(req, res) {
 async function verifyMe(req, res) {
 	try {
 		const user = await User.findById(req.user.id).select(
-			"profile.avatar _id name email status",
+			"avatar _id name email status",
 		);
 		console.log(user);
 

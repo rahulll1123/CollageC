@@ -9,6 +9,8 @@ import { protect } from "./src/middlewares/auth.middleware.js";
 import cookieParser from "cookie-parser";
 import { UploadImage } from "./src/middlewares/upload.middleware.js";
 import postRoutes from "./src/routes/post.route.js";
+import commentRoutes from "./src/routes/comment.route.js";
+import projectRoutes from "./src/routes/project.route.js";
 import LogRequest from "./src/middlewares/logs.middleware.js";
 import cors from "cors";
 
@@ -41,7 +43,9 @@ app.use(LogRequest);
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/chat", protect, chatRoutes);
+app.use("/api/comment", protect, commentRoutes);
 app.use("/api/post", protect, UploadImage, postRoutes);
+app.use("/api/project", protect, UploadImage, projectRoutes);
 
 // Start the server
 app.listen(Port, () => {

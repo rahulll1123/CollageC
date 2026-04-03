@@ -59,7 +59,7 @@ export const PostCard = ({ post, setCommentIdPost }) => {
 			<div className="flex items-center gap-3 justify-between">
 				<div className="flex items-center gap-3">
 					<Avatar className="h-10 w-10">
-						<AvatarImage src={post.user.profile.avatar} />
+						<AvatarImage src={post.user.avatar} />
 						<AvatarFallback>
 							{post.user.name?.charAt(0)}
 						</AvatarFallback>
@@ -161,7 +161,6 @@ export const PostCard = ({ post, setCommentIdPost }) => {
 					onClick={() => setCommentIdPost(post._id)}
 				>
 					<MessageCircle className="w-4 h-4" />
-					{post.comments?.length || 0}
 				</button>
 				<button className="flex items-center gap-2 hover:text-foreground transition-colors cursor-pointer">
 					<Share2 className="w-4 h-4" />
