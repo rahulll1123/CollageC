@@ -19,14 +19,14 @@ import {
 	createComment,
 	getPostComments,
 } from "../controllers/comment.controller.js";
-
+import upload from "../middlewares/upload.middleware.js";
 // import { protect } from "../middlewares/auth.middleware.js";
 
 // Post Routes
 router
 	.route("/")
 	.get(getAllPosts) // feed all post (wip to add quer for personalized feed)
-	.post(createPost); // create Post (wip add reference to Project)
+	.post(upload.single("image"), createPost); // create Post (wip add reference to Project)
 
 router.route("/user/:userId").get(getUserPosts); // all post of a user (profile)
 

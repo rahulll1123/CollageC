@@ -9,16 +9,23 @@ import axios from "axios";
 import { formatDistanceToNow } from "date-fns";
 
 export const PostCard = ({ post, setCommentIdPost }) => {
-	const { user } = useContext(AuthContext);
-	const [isExpanded, setIsExpanded] = useState(false);
+	const { user } = useContext(AuthContext); // Get current user from context
+	const [isExpanded, setIsExpanded] = useState(false); // For description expansion
+	// Like state
 	const [like, setLike] = useState(null);
+	const [likeCount, setLikeCount] = useState(post.likeCount || 0);
 	const [loadinglike, setLoadinglike] = useState(false);
+	// Comment
+	const [commentCount, setCommentCount] = useState(post.commentCount || 0);
+	// For image carousel
 	const [activeIndexImage, setActiveIndexImage] = useState(0);
 	const scrollRef = useRef(null);
 
 	useEffect(() => {
-		setLike(!!post.likes?.includes(user?._id));
-	}, [post.likes, user?._id]);
+		if (user && post.hasLiked !== undefined) {
+			setLike(!!post.hasLiked);
+		}
+	}, []);
 
 	const toggleLike = async () => {
 		const oldlikestatus = like;
@@ -26,11 +33,11 @@ export const PostCard = ({ post, setCommentIdPost }) => {
 		setLoadinglike(true);
 		try {
 			if (!oldlikestatus) {
-				post.likes.push(user._id);
 				await axios.post(`api/post/${post._id}/like`);
+				setLikeCount((prev) => prev + 1);
 			} else {
-				post.likes.pop(user._id);
-				await axios.post(`api/post/${post._id}/unlike`);
+				await axios.delete(`api/post/${post._id}/like`);
+				setLikeCount((prev) => prev - 1);
 			}
 		} catch (error) {
 			console.log("likeerror", error);
@@ -91,8 +98,7 @@ export const PostCard = ({ post, setCommentIdPost }) => {
 				className={`text-sm text-muted-foreground leading-relaxed cursor-text ${
 					!isExpanded && "line-clamp-2"
 				}`}
-				onClick={() => setIsExpanded(!isExpanded)}
-			>
+				onClick={() => setIsExpanded(!isExpanded)}>
 				{post.description}
 			</p>
 
@@ -102,13 +108,11 @@ export const PostCard = ({ post, setCommentIdPost }) => {
 					<div
 						className="flex gap-2 overflow-x-auto snap-x snap-mandatory -mx-4 px-4 no-scrollbar"
 						ref={scrollRef}
-						onScroll={handleScroll}
-					>
+						onScroll={handleScroll}>
 						{post.images.map((image, index) => (
 							<div
 								key={index}
-								className="shrink-0 snap-center rounded overflow-hidden aspect-square w-full"
-							>
+								className="shrink-0 snap-center rounded overflow-hidden aspect-square w-full">
 								<img
 									src={image || "./default-avatar.svg"}
 									alt={`Post ${index}`}
@@ -137,8 +141,7 @@ export const PostCard = ({ post, setCommentIdPost }) => {
 						<Badge
 							key={index}
 							variant="outline"
-							className="text-xs cursor-pointer"
-						>
+							className="text-xs cursor-pointer">
 							{tag}
 						</Badge>
 					))}
@@ -151,16 +154,15 @@ export const PostCard = ({ post, setCommentIdPost }) => {
 					// className={`flex gap-2 hover:text-foreground transition-colors  ${loadinglike ? "cursor-progress" : "cursor-pointer"}`}
 					className="flex gap-2 hover:text-foreground transition-colors cursor-pointer disabled:cursor-progress"
 					disabled={loadinglike}
-					onClick={toggleLike}
-				>
+					onClick={toggleLike}>
 					<Heart className="w-4 h-4" fill={like ? "red" : null} />
-					{post.likes?.length || 0}
+					{likeCount || 0}
 				</button>
 				<button
 					className="flex items-center gap-2 hover:text-foreground transition-colors cursor-pointer"
-					onClick={() => setCommentIdPost(post._id)}
-				>
+					onClick={() => setCommentIdPost(post._id)}>
 					<MessageCircle className="w-4 h-4" />
+					{commentCount || 0}
 				</button>
 				<button className="flex items-center gap-2 hover:text-foreground transition-colors cursor-pointer">
 					<Share2 className="w-4 h-4" />

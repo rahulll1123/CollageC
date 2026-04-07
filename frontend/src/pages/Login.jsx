@@ -75,8 +75,7 @@ export default function Login() {
 				<CardContent>
 					<form
 						onSubmit={handleSubmit(onSubmit)}
-						className="grid gap-4"
-					>
+						className="grid gap-4">
 						{/* Email Field */}
 						<div className="grid gap-2">
 							<Label htmlFor="email">Email</Label>
@@ -102,8 +101,7 @@ export default function Login() {
 								<Label htmlFor="password">Password</Label>
 								<Link
 									to="/"
-									className="text-xs opacity-50 hover:underline"
-								>
+									className="text-xs opacity-50 hover:underline">
 									Forgot password?
 								</Link>
 							</div>
@@ -125,8 +123,7 @@ export default function Login() {
 						<Button
 							type="submit"
 							className="w-full"
-							disabled={isSubmitting}
-						>
+							disabled={isSubmitting}>
 							{isSubmitting ? "Logging in..." : "Login"}
 						</Button>
 					</form>

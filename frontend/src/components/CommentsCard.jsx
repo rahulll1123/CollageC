@@ -6,7 +6,6 @@ import { formatDistanceToNow } from "date-fns";
 import { Heart, Reply, MessageCirclePlus } from "lucide-react";
 import { AuthContext } from "@/context/AuthContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Input } from "./ui/input";
 
 // Convert flat comments list to tree
 const buildCommentTree = (flatComments) => {
@@ -38,7 +37,7 @@ function CommentsCard({ postId, setCommentIdPost }) {
 	const [input, setInput] = useState("");
 	const [replyTo, setReplyTo] = useState(null); // Stores the whole comment object or null
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	console.log(postId);
+	// console.log(postId);
 
 	//Handle closing of Comment Card
 	useEffect(() => {
@@ -68,7 +67,7 @@ function CommentsCard({ postId, setCommentIdPost }) {
 	const fetchComments = async () => {
 		try {
 			const res = await axios.get(`/api/post/${postId}/comments`);
-			const tree = buildCommentTree(res.data.comments);
+			const tree = buildCommentTree(res.data);
 			setCommentsTree(tree);
 		} catch (err) {
 			console.error(err);
@@ -95,13 +94,13 @@ function CommentsCard({ postId, setCommentIdPost }) {
 		try {
 			const payload = {
 				content: input,
-				parentCommentId: replyTo?._id || null, // If replying, send the ID
+				parentCommentId: replyTo?._id || null,
 			};
 			console.log(payload);
 			const res = await axios.post(
 				`/api/post/${postId}/comments`,
 				payload,
-			); //:postId/comments
+			);
 			console.log("Hello", res);
 
 			await fetchComments();
@@ -125,8 +124,7 @@ function CommentsCard({ postId, setCommentIdPost }) {
 					<h3 className="font-bold text-lg">Discussion</h3>
 					<button
 						onClick={() => setCommentIdPost(null)}
-						className="text-xl"
-					>
+						className="text-xl">
 						✕
 					</button>
 				</div>
@@ -164,8 +162,7 @@ function CommentsCard({ postId, setCommentIdPost }) {
 							</div>
 							<button
 								onClick={() => setReplyTo(null)}
-								className="text-slate-400 hover:text-red-500 ml-2"
-							>
+								className="text-slate-400 hover:text-red-500 ml-2">
 								✕
 							</button>
 						</div>
@@ -194,8 +191,7 @@ function CommentsCard({ postId, setCommentIdPost }) {
 								input.trim()
 									? "text-foreground cursor-pointer"
 									: "text-muted-foreground cursor-default"
-							}`}
-						>
+							}`}>
 							<MessageCirclePlus size={24} strokeWidth={2.5} />
 						</button>
 					</div>
@@ -208,10 +204,10 @@ function CommentsCard({ postId, setCommentIdPost }) {
 const CommentItem = ({ comment, setReplyTo }) => {
 	const { user } = useContext(AuthContext);
 	const [like, setLike] = useState(null);
-	const [loadinglike, setLoadinglike] = useState(false);
+	const [loadingLike, setLoadinglike] = useState(false);
 	useEffect(() => {
-		setLike(!!comment.likes?.includes(user?._id));
-	}, [comment.likes, user?._id]);
+		setLike(comment.hasLiked);
+	}, [comment.hasLiked, user?._id]);
 
 	const toggleLike = async () => {
 		const oldlikestatus = like;
@@ -219,11 +215,9 @@ const CommentItem = ({ comment, setReplyTo }) => {
 		setLoadinglike(true);
 		try {
 			if (!oldlikestatus) {
-				comment.likes.push(user._id);
-				await axios.post(`api/post/comments/${comment._id}/like`);
+				await axios.post(`api/comments/${comment._id}/like`);
 			} else {
-				comment.likes.pop(user._id);
-				await axios.post(`api/post/comments/${comment._id}/unlike`);
+				await axios.delete(`api/comments/${comment._id}/like`);
 			}
 		} catch (error) {
 			console.log("likeerror", error);
@@ -266,14 +260,13 @@ const CommentItem = ({ comment, setReplyTo }) => {
 					<button
 						className="flex items-center gap-1 hover:text-blue-500"
 						onClick={toggleLike}
-					>
+						disabled={loadingLike}>
 						<Heart size={14} fill={like ? "red" : ""} />{" "}
 						{comment.likes?.length || 0}
 					</button>
 					<button
 						onClick={() => setReplyTo(comment)}
-						className="flex items-center gap-1 hover:text-blue-500"
-					>
+						className="flex items-center gap-1 hover:text-blue-500">
 						<Reply size={14} /> Reply
 					</button>
 				</div>

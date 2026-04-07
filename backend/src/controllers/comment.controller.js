@@ -53,6 +53,9 @@ export async function createComment(req, res) {
 			parentComment: parentCommentId,
 		});
 		await comment.save();
+
+		
+
 		res.status(201).json(comment);
 	} catch (error) {
 		res.status(400).json({ message: error.message });

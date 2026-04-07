@@ -37,31 +37,43 @@ commentSchema.statics.getCommentPipeline = function (userId) {
 				from: "users",
 				localField: "user",
 				foreignField: "_id",
+				pipeline: [{ $project: { name: 1, _id: 1, avatar: 1 } }],
 				as: "user",
 			},
 		},
 		{ $unwind: "$user" },
 		{
+			$lookup: {
+				from: "comments",
+				localField: "_id",
+				foreignField: "parentComment",
+				pipeline: [{ $count: "total" }],
+				as: "replies",
+			},
+		},
+		{
 			$addFields: {
+				totalReplies: {
+					$ifNull: [{ $arrayElemAt: ["$replies.total", 0] }, 0],
+				},
 				hasLiked: {
 					$in: [
 						new mongoose.Types.ObjectId(userId),
 						{ $ifNull: ["$likes", []] },
 					],
 				},
+				likeCount: { $size: { $ifNull: ["$likes", []] } },
 			},
 		},
 		{
 			$project: {
 				likes: 0,
 				__v: 0,
-				"user.password": 0,
-				"user.email": 0,
-				"user.profile": 0,
-				"user.createdAt": 0,
-				"user.updatedAt": 0,
-				"user.__v": 0,
+				replies: 0,
 			},
+		},
+		{
+			$sort: { createdAt: -1 },
 		},
 	];
 };

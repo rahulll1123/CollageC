@@ -42,7 +42,9 @@ export default function Navbar() {
 						<NavigationMenuList>
 							<NavigationMenuItem>
 								<NavigationMenuLink asChild>
-									<Link to="/">Home</Link>
+									<Button variant="ghost" asChild>
+										<Link to="/add-post">Add Post</Link>
+									</Button>
 								</NavigationMenuLink>
 							</NavigationMenuItem>
 
@@ -54,20 +56,17 @@ export default function Navbar() {
 									<div className="w-50 p-1">
 										<Link
 											to="/topics"
-											className="block px-2 py-1 border-b"
-										>
+											className="block px-2 py-1 border-b">
 											Topics
 										</Link>
 										<Link
 											to="/trending"
-											className="block px-2 py-1 border-b"
-										>
+											className="block px-2 py-1 border-b">
 											Trending
 										</Link>
 										<Link
 											to="/popular"
-											className="block px-2 py-1 border-b"
-										>
+											className="block px-2 py-1 border-b">
 											Popular
 										</Link>
 									</div>
@@ -99,8 +98,7 @@ export default function Navbar() {
 								<Button
 									variant="ghost"
 									size="icon"
-									className="rounded-full"
-								>
+									className="rounded-full">
 									<Avatar>
 										<AvatarImage
 											src={user.profile?.avatar}
@@ -161,8 +159,7 @@ export default function Navbar() {
 							</Link>
 							<Link
 								to="/notifications"
-								onClick={() => setIsOpen(false)}
-							>
+								onClick={() => setIsOpen(false)}>
 								Notifications
 							</Link>
 
@@ -172,14 +169,12 @@ export default function Navbar() {
 								<div className="space-y-2 flex flex-col">
 									<Link
 										to={`/profile/${user._id}`}
-										onClick={() => setIsOpen(false)}
-									>
+										onClick={() => setIsOpen(false)}>
 										{user.name}'s Profile
 									</Link>
 									<Link
 										to="/settings"
-										onClick={() => setIsOpen(false)}
-									>
+										onClick={() => setIsOpen(false)}>
 										Settings
 									</Link>
 									<Button
@@ -188,8 +183,7 @@ export default function Navbar() {
 										onClick={() => {
 											logout();
 											setIsOpen(false);
-										}}
-									>
+										}}>
 										Logout
 									</Button>
 								</div>
@@ -198,8 +192,7 @@ export default function Navbar() {
 									<Button
 										asChild
 										variant="outline"
-										className="w-full"
-									>
+										className="w-full">
 										<Link to="/Login">Login</Link>
 									</Button>
 									<Button asChild className="w-full">

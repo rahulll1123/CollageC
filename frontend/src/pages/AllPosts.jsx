@@ -64,6 +64,20 @@ export default function AllPosts() {
 					setCommentIdPost={setCommentIdPost}
 				/>
 			)}
+			<button
+				onClick={() => setPage((prev) => prev + 1)}
+				className="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700 transition-colors">
+				Next
+			</button>
+			<button
+				onClick={() => {
+					if (page >= 1) {
+						setPage((prev) => prev - 1);
+					}
+				}}
+				className="fixed bottom-4 left-4 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700 transition-colors">
+				Previous
+			</button>
 		</div>
 	);
 }

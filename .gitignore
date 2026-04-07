@@ -3,3 +3,5 @@
 /build/
 */.env
 *.log
+/backend/public/uploads/
+.vscode/*

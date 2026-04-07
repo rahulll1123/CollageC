@@ -1,16 +1,11 @@
 /** @format */
 import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
+import { uploadToCloudinary } from "../utils/cloudinary.js";
 
 export async function createPost(req, res) {
 	try {
-		const {
-			project = null,
-			title,
-			description,
-			images,
-			tags = [],
-		} = req.body;
+		const { project = null, title, description, tags = "" } = req.body;
 		if (!title || !description) {
 			return res
 				.status(400)
@@ -28,6 +23,13 @@ export async function createPost(req, res) {
 				message: "You have already created a post with this title",
 			});
 		}
+		const tagArr = tags.replaceAll(" ", "").split(",");
+		let images = [];
+		if (req.file) {
+			console.log("File uploaded:", req.file);
+			const result = await uploadToCloudinary(req.file.path);
+			images = [result.secure_url];
+		}
 
 		const user = await User.findById(req.user.id).select("profile");
 		if (!user) {
@@ -40,7 +42,7 @@ export async function createPost(req, res) {
 			title,
 			description,
 			images,
-			tags,
+			tags: tagArr,
 		});
 		await post.save();
 

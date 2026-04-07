@@ -34,10 +34,23 @@ postSchema.statics.getPostPipeline = function (userId) {
 				from: "users",
 				localField: "user",
 				foreignField: "_id",
+				pipeline: [{ $project: { name: 1, _id: 1, avatar: 1 } }],
 				as: "user",
 			},
 		},
 		{ $unwind: "$user" },
+		{
+			$lookup: {
+				from: "comments",
+				localField: "_id",
+				foreignField: "post",
+				pipeline: [
+					{ $match: { parentComment: null } },
+					{ $count: "total" },
+				],
+				as: "comments",
+			},
+		},
 		{
 			$addFields: {
 				hasLiked: {
@@ -46,18 +59,17 @@ postSchema.statics.getPostPipeline = function (userId) {
 						{ $ifNull: ["$likes", []] },
 					],
 				},
+				likeCount: { $size: { $ifNull: ["$likes", []] } },
+				commentCount: {
+					$ifNull: [{ $arrayElemAt: ["$comments.total", 0] }, 0],
+				},
 			},
 		},
 		{
 			$project: {
 				likes: 0,
 				__v: 0,
-				"user.password": 0,
-				"user.email": 0,
-				"user.profile": 0,
-				"user.createdAt": 0,
-				"user.updatedAt": 0,
-				"user.__v": 0,
+				comments: 0,
 			},
 		},
 	];

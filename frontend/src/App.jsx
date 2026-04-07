@@ -10,6 +10,8 @@ import Signup from "./pages/Signup";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "./layouts/ProtectedRoute";
 import Navbar from "./components/Navbar";
+import { Toaster } from "./components/ui/sonner";
+import { AddPost } from "./components/AddPost";
 
 axios.defaults.baseURL = "http://localhost:5500";
 axios.defaults.withCredentials = true;
@@ -19,6 +21,7 @@ function App() {
 	return (
 		<AuthProvider>
 			<Router>
+				<Toaster />
 				<Navbar />
 				<div className="App">
 					<Routes>
@@ -27,6 +30,7 @@ function App() {
 						<Route path="/Signup" element={<Signup />} />
 						<Route element={<ProtectedRoute />}>
 							<Route path="/" element={<AllPosts />} />
+							<Route path="/add-post" element={<AddPost />} />
 						</Route>
 						{/* </Route> */}
 						<Route path="/*" element={<AllPosts />} />
