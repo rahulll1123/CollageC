@@ -18,7 +18,7 @@ export async function getPostComments(req, res) {
 
 export async function getReplies(req, res) {
 	try {
-		const replies = await Comment.getReplies(
+		const replies = await Comment.getReply(
 			req.params.commentId,
 			req.user.id,
 		);
@@ -53,8 +53,6 @@ export async function createComment(req, res) {
 			parentComment: parentCommentId,
 		});
 		await comment.save();
-
-		
 
 		res.status(201).json(comment);
 	} catch (error) {

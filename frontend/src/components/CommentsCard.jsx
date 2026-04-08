@@ -1,11 +1,12 @@
 /** @format */
 
-import { useEffect, useState, useRef, useContext } from "react";
+import { useEffect, useState, useRef, useContext, use } from "react";
 import axios from "axios";
 import { formatDistanceToNow } from "date-fns";
-import { Heart, Reply, MessageCirclePlus } from "lucide-react";
+import { Heart, Reply, MessageCirclePlus, ChevronDown, X } from "lucide-react";
 import { AuthContext } from "@/context/AuthContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { set } from "zod";
 
 // Convert flat comments list to tree
 const buildCommentTree = (flatComments) => {
@@ -29,27 +30,37 @@ const buildCommentTree = (flatComments) => {
 };
 
 function CommentsCard({ postId, setCommentIdPost }) {
+	const { user } = useContext(AuthContext);
 	const cardRef = useRef(null);
 	const inputRef = useRef(null);
 	const [page, setPage] = useState(1);
+	const [flatComments, setFlatComments] = useState([]);
 	const [commentsTree, setCommentsTree] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [input, setInput] = useState("");
 	const [replyTo, setReplyTo] = useState(null); // Stores the whole comment object or null
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [isVisible, setIsVisible] = useState(false);
+
 	// console.log(postId);
+
+	useEffect(() => {
+		setIsVisible(true);
+	}, []);
 
 	//Handle closing of Comment Card
 	useEffect(() => {
 		// 1. Function to check if the click was outside the card
 		const handleClickOutside = (event) => {
 			if (cardRef.current && !cardRef.current.contains(event.target)) {
-				setCommentIdPost(null);
+				setIsVisible(false);
+				setTimeout(() => setCommentIdPost(null), 300);
 			}
 		};
 		const handleKeyDown = (event) => {
 			if (event.key === "Escape") {
-				setCommentIdPost(null);
+				setIsVisible(false);
+				setTimeout(() => setCommentIdPost(null), 300);
 			}
 		};
 		// 2. Attach the event listener to the whole document
@@ -63,12 +74,18 @@ function CommentsCard({ postId, setCommentIdPost }) {
 		};
 	}, [setCommentIdPost]);
 
+	useEffect(() => {
+		// console.log("comment tree Updated:", buildCommentTree(flatComments));
+		setCommentsTree(buildCommentTree(flatComments));
+	}, [flatComments]);
+
 	//Handle api for Acuiring and building comment tree
 	const fetchComments = async () => {
 		try {
 			const res = await axios.get(`/api/post/${postId}/comments`);
+			// console.log(res.data);
 			const tree = buildCommentTree(res.data);
-			setCommentsTree(tree);
+			setFlatComments(res.data);
 		} catch (err) {
 			console.error(err);
 		} finally {
@@ -78,6 +95,18 @@ function CommentsCard({ postId, setCommentIdPost }) {
 	useEffect(() => {
 		fetchComments();
 	}, [postId]);
+
+	// handles reply loading
+	const updateReplies = async (commentId) => {
+		try {
+			const res = await axios.get(`/api/comment/${commentId}/reply`);
+			setFlatComments((prev) => [...prev, ...res.data]);
+			// console.log("Updated replies for comment", commentId, res.data);
+		} catch (err) {
+			console.error("Failed to fetch replies:", err);
+			return [];
+		}
+	};
 
 	// Handle reply to change focus
 	useEffect(() => {
@@ -96,14 +125,23 @@ function CommentsCard({ postId, setCommentIdPost }) {
 				content: input,
 				parentCommentId: replyTo?._id || null,
 			};
-			console.log(payload);
+			// console.log(payload);
 			const res = await axios.post(
 				`/api/post/${postId}/comments`,
 				payload,
 			);
-			console.log("Hello", res);
-
-			await fetchComments();
+			// console.log("Hello", res.data);
+			let commentToAdd = res.data;
+			commentToAdd.likeCount = 0;
+			commentToAdd.hasLiked = false;
+			commentToAdd.totalReplies = 0;
+			commentToAdd.user = {
+				_id: user.id,
+				name: user.name,
+				avatar: user.avatar,
+			};
+			setFlatComments((prev) => [...prev, commentToAdd]);
+			// await fetchComments();
 
 			setInput("");
 			setReplyTo(null); // Reset reply state after sending
@@ -116,16 +154,22 @@ function CommentsCard({ postId, setCommentIdPost }) {
 
 	return (
 		// full screen blur
-		<div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
+		<div
+			className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ${isVisible ? "backdrop-blur-sm bg-black/50" : "backdrop-blur-none bg-transparent"}`}>
 			{/* card area */}
-			<div className="w-[95%] max-w-lg h-[80vh] bg-card rounded-xl shadow-2xl flex flex-col overflow-hidden">
+			<div
+				ref={cardRef}
+				className={`w-[95%] max-w-lg h-[80vh] bg-card rounded-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ease-out ${isVisible ? "opacity-100 scale-100" : "opacity-0 scale-75"}`}>
 				{/* Header */}
 				<div className="p-4 border-b flex justify-between items-center">
 					<h3 className="font-bold text-lg">Discussion</h3>
 					<button
-						onClick={() => setCommentIdPost(null)}
-						className="text-xl">
-						✕
+						onClick={() => {
+							setIsVisible(false);
+							setTimeout(() => setCommentIdPost(null), 300);
+						}}
+						className="text-xl cursor-pointer">
+						<X />
 					</button>
 				</div>
 
@@ -139,6 +183,7 @@ function CommentsCard({ postId, setCommentIdPost }) {
 								key={comment._id}
 								comment={comment}
 								setReplyTo={setReplyTo}
+								updateReplies={updateReplies}
 							/>
 						))
 					) : (
@@ -162,7 +207,7 @@ function CommentsCard({ postId, setCommentIdPost }) {
 							</div>
 							<button
 								onClick={() => setReplyTo(null)}
-								className="text-slate-400 hover:text-red-500 ml-2">
+								className="text-slate-400 hover:text-red-500 ml-2 cursor-pointer">
 								✕
 							</button>
 						</div>
@@ -201,13 +246,18 @@ function CommentsCard({ postId, setCommentIdPost }) {
 	);
 }
 
-const CommentItem = ({ comment, setReplyTo }) => {
+const CommentItem = ({ comment, setReplyTo, updateReplies }) => {
 	const { user } = useContext(AuthContext);
 	const [like, setLike] = useState(null);
 	const [loadingLike, setLoadinglike] = useState(false);
+	const [likeCount, setLikeCount] = useState(comment.likeCount || 0);
+
+	const [replyLoading, setReplyLoading] = useState(false);
 	useEffect(() => {
-		setLike(comment.hasLiked);
-	}, [comment.hasLiked, user?._id]);
+		if (user && comment.hasLiked !== undefined) {
+			setLike(!!comment.hasLiked);
+		}
+	}, []);
 
 	const toggleLike = async () => {
 		const oldlikestatus = like;
@@ -215,9 +265,11 @@ const CommentItem = ({ comment, setReplyTo }) => {
 		setLoadinglike(true);
 		try {
 			if (!oldlikestatus) {
-				await axios.post(`api/comments/${comment._id}/like`);
+				await axios.post(`api/comment/${comment._id}/like`);
+				setLikeCount((prev) => prev + 1);
 			} else {
-				await axios.delete(`api/comments/${comment._id}/like`);
+				await axios.delete(`api/comment/${comment._id}/like`);
+				setLikeCount((prev) => prev - 1);
 			}
 		} catch (error) {
 			console.log("likeerror", error);
@@ -227,49 +279,62 @@ const CommentItem = ({ comment, setReplyTo }) => {
 
 	return (
 		<div className="flex flex-col gap-3 ml-2 border-l-2 border-border pl-4 py-2">
-			<div className="flex flex-col">
-				<div className="flex items-center gap-2">
-					<Avatar className="h-8 w-8">
-						<AvatarImage src={comment.user.avatar} />
-						<AvatarFallback>
-							{comment.user.name?.charAt(0)}
-						</AvatarFallback>
-					</Avatar>
-					<span className="font-bold text-xs">
-						{comment.user?.name || "Anonymous"}
-					</span>
-
-					<span className="text-[10px] text-muted-foreground">
-						{formatDistanceToNow(new Date(comment.createdAt), {
-							addSuffix: true,
-						})}
-					</span>
-				</div>
-
-				<p className="text-sm mt-1 text-slate-800">
-					{comment.isDeleted ? (
-						<span className="italic text-gray-400">
-							This comment was deleted
+			<div className="flex items-center justify-between">
+				<div className="flex flex-col">
+					<div className="flex items-center gap-2">
+						<Avatar className="h-8 w-8 cursor-pointer">
+							<AvatarImage src={comment.user.avatar} />
+							<AvatarFallback>
+								{comment.user.name?.charAt(0)}
+							</AvatarFallback>
+						</Avatar>
+						<span className="font-bold text-xs">
+							{comment.user?.name || "Anonymous"}
 						</span>
-					) : (
-						comment.content
-					)}
-				</p>
 
-				<div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-					<button
-						className="flex items-center gap-1 hover:text-blue-500"
-						onClick={toggleLike}
-						disabled={loadingLike}>
-						<Heart size={14} fill={like ? "red" : ""} />{" "}
-						{comment.likes?.length || 0}
-					</button>
-					<button
-						onClick={() => setReplyTo(comment)}
-						className="flex items-center gap-1 hover:text-blue-500">
-						<Reply size={14} /> Reply
-					</button>
+						<span className="text-[10px] text-muted-foreground">
+							{formatDistanceToNow(new Date(comment.createdAt), {
+								addSuffix: true,
+							})}
+						</span>
+					</div>
+
+					<p className="text-sm mt-1 text-foreground-800">
+						{comment.isDeleted ? (
+							<span className="italic text-gray-400">
+								This comment was deleted
+							</span>
+						) : (
+							comment.content
+						)}
+					</p>
+
+					<div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+						<button
+							className="flex items-center gap-1 hover:text-primary cursor-pointer"
+							onClick={toggleLike}
+							disabled={loadingLike}>
+							<Heart size={14} fill={like ? "red" : ""} />{" "}
+							{likeCount || 0}
+						</button>
+						<button
+							onClick={() => setReplyTo(comment)}
+							className="flex items-center gap-1 hover:text-primary cursor-pointer">
+							<Reply size={14} /> Reply
+						</button>
+					</div>
 				</div>
+				{comment.totalReplies > 0 && comment.replies.length == 0 && (
+					<button
+						onClick={() => {
+							setReplyLoading(true);
+							return updateReplies(comment._id);
+						}}
+						disabled={replyLoading}
+						className="flex items-center gap-1 hover:text-primary cursor-pointer">
+						<ChevronDown size={20} />
+					</button>
+				)}
 			</div>
 
 			{/* RECURSION HAPPENS HERE */}
@@ -280,6 +345,7 @@ const CommentItem = ({ comment, setReplyTo }) => {
 							key={reply._id}
 							comment={reply}
 							setReplyTo={setReplyTo}
+							updateReplies={updateReplies}
 						/>
 					))}
 				</div>
